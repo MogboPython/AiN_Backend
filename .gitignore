@@ -1,0 +1,8 @@
+credentials.json
+fly.toml
+venv/
+dump.py
+Spacefile
+.env
+__pycache__
+cred.txt
