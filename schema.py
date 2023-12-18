@@ -25,7 +25,8 @@ class Guest(BaseModel):
     name: str
     email: EmailStr
     ticket_type: str
-    suggestions: str
+    other_names: Union[str, None] = None
+    suggestions: Union[str, None] = None
 
 class Recruit(BaseModel):
     first_name: str

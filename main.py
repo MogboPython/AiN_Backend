@@ -148,6 +148,7 @@ def submit_guest(guest: Guest):
             guest.name,
             guest.email,
             guest.ticket_type,
+            guest.other_names,
             guest.suggestions
         ])
 
