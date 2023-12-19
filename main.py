@@ -135,6 +135,41 @@ def submit_recruit(recruit: Recruit):
         ])
 
         return recruit.first_name, recruit.email
+
+# Callback function for the ncjos endpiont
+def submit_nc_jos_data(ncjos: NCJOS):
+    
+
+    sheet = gc.open('NC Jos Conference Signups').sheet1
+    all_values = sheet.get_all_values()
+    emails = [row[3] for row in all_values]  
+
+    if ncjos.email in emails:
+        data  = {
+            "status": False,
+            "message": "This user already exists"
+        }
+        raise HTTPException(status_code=400, data=data)
+    else:
+        sheet.append_row([
+            ncjos.name,
+            ncjos.ravenCoordinates,
+            ncjos.gender,
+            ncjos.email,  # corrected from: ncjos.email: EmailStr
+            ncjos.address,
+            ncjos.lc,
+            ncjos.birthday,
+            ncjos.rank,
+            ncjos.emergencyContact,
+            ncjos.allergies,
+            ncjos.allergyTreatment,
+            ncjos.oppositeSexCompatibility,
+            ncjos.firstSummit,
+            ncjos.emergencyContactRelationship,
+            ncjos.suggestions
+        ])
+
+        return ncjos.name, ncjos.email
     
 def submit_guest(guest: Guest):
     sheet = gc.open('Dinner Registration').sheet1
@@ -153,6 +188,7 @@ def submit_guest(guest: Guest):
         ])
 
         return guest.name
+
 
 @app.get("/api/healthcheck")
 def read_root():
@@ -176,6 +212,24 @@ async def register(delegate: Delegate):
         'email_template.html'
     )
     return {"detail":"registration success", }
+
+# Api endpoint for NC Jos
+@app.post("/api/register_for_ncjos")
+async def register(ncjos: NCJOS):
+    name, email = submit_nc_jos_data(ncjos)
+    await send_email_async(
+        'NC Jos Confirmation', 
+        ncjos.email, 
+        {
+            "first_name" : name,
+        },
+        'email_template.html'
+    )
+    created = {
+        'status' : True,
+        'message' : 'Registeration Successfull'
+    }
+    return created, 201
 
 @app.post("/api/recruitment")
 async def register(recruit: Recruit):
