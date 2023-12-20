@@ -48,6 +48,25 @@ class Recruit(BaseModel):
     skills: Union[str, None] = None
     hear_about_recruitment: Union[str, None] = None
 
+class NCJOS(BaseModel):
+    name: str
+    ravenCoordinates: str
+    gender: str
+    email: EmailStr
+    address: str
+    lc: str
+    birthday: str
+    rank: str
+    emergencyContact: str
+    allergies: str
+    allergyTreatment: str
+    oppositeSexCompatibility: str
+    firstSummit: str
+    emergencyContactRelationship: str
+    suggestions: str
+
+    # hear_about_recruitment: Union[str, None] = None
+
 
 # class Config(BaseSettings):
 #     GOOGLE_CREDENTIALS: any
