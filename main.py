@@ -7,6 +7,7 @@ from fastapi_mail import FastMail, MessageSchema, MessageType
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
 config = Configuration()
 
@@ -71,32 +72,32 @@ def submit_to_sheet(email: str):
     else:
         sheet.append_row([email])
 
-def submit_delegate(delegate: Delegate):
-    sheet = gc.open('Leadership Summit Registration Sheet').sheet1
-    all_values = sheet.get_all_values()
-    emails = [row[2] for row in all_values]  
+# def submit_delegate(delegate: Delegate):
+#     sheet = gc.open('Leadership Summit Registration Sheet').sheet1
+#     all_values = sheet.get_all_values()
+#     emails = [row[2] for row in all_values]  
 
-    if delegate.email in emails:
-        raise HTTPException(status_code=400, detail="already registered")
-    else:
-        num_of_rows = len(all_values)
-        delegate_id = "LS23" + get_serial_number(num_of_rows)
-        sheet.append_row([
-            delegate_id,
-            delegate.name, 
-            delegate.email, 
-            delegate.phone, 
-            delegate.state_residence, 
-            delegate.occupation, 
-            delegate.school, 
-            delegate.expectations, 
-            delegate.sdg_knowledge,
-            delegate.join_event,
-            delegate.hear_about_event
-        ])
+#     if delegate.email in emails:
+#         raise HTTPException(status_code=400, detail="already registered")
+#     else:
+#         num_of_rows = len(all_values)
+#         delegate_id = "LS23" + get_serial_number(num_of_rows)
+#         sheet.append_row([
+#             delegate_id,
+#             delegate.name, 
+#             delegate.email, 
+#             delegate.phone, 
+#             delegate.state_residence, 
+#             delegate.occupation, 
+#             delegate.school, 
+#             delegate.expectations, 
+#             delegate.sdg_knowledge,
+#             delegate.join_event,
+#             delegate.hear_about_event
+#         ])
 
-        first_name, _ = split_name(delegate.name)
-        return delegate_id, first_name
+#         first_name, _ = split_name(delegate.name)
+#         return delegate_id, first_name
     
 def submit_recruit(recruit: Recruit):
     name_of_school = recruit.name_of_school 
@@ -138,25 +139,20 @@ def submit_recruit(recruit: Recruit):
 
 # Callback function for the ncjos endpiont
 def submit_nc_jos_data(ncjos: NCJOS):
-    
-
     sheet = gc.open('NC Jos Conference Signups').sheet1
     all_values = sheet.get_all_values()
     emails = [row[3] for row in all_values]  
 
     if ncjos.email in emails:
-        data  = {
-            "status": False,
-            "message": "This user already exists"
-        }
-        raise HTTPException(status_code=400, data=data)
+        raise HTTPException(status_code=400, detail="This user already exists")
     else:
+        created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
         sheet.append_row([
             ncjos.name,
             ncjos.ravenCoordinates,
             ncjos.gender,
-            ncjos.email,  # corrected from: ncjos.email: EmailStr
-            ncjos.address,
+            ncjos.email, 
+            created_at,
             ncjos.lc,
             ncjos.birthday,
             ncjos.rank,
@@ -168,11 +164,12 @@ def submit_nc_jos_data(ncjos: NCJOS):
             ncjos.emergencyContactRelationship,
             ncjos.suggestions
         ])
+        first_name, last_name = split_name(ncjos.name)
 
-        return ncjos.name, ncjos.email
+        return first_name, last_name, ncjos.email, ncjos.lc
     
 def submit_guest(guest: Guest):
-    sheet = gc.open('Dinner Registration').sheet1
+    sheet = gc.open('Eclipse Dinner Guests').sheet1
     all_values = sheet.get_all_values()
     emails = [row[1] for row in all_values]  
 
@@ -199,31 +196,33 @@ async def submit_email(email: UserEmail):
     submit_to_sheet(email.email)
     return {"detail":"registration success"}
 
-@app.post("/api/register_delegate")
-async def register(delegate: Delegate):
-    delegate_id, first_name = submit_delegate(delegate)
-    await send_email_async(
-        'Leadership Summit Confirmation', 
-        delegate.email, 
-        {
-            "first_name" : first_name,
-            "delegate_id" : delegate_id
-        },
-        'email_template.html'
-    )
-    return {"detail":"registration success", }
+# @app.post("/api/register_delegate")
+# async def register(delegate: Delegate):
+#     delegate_id, first_name = submit_delegate(delegate)
+#     await send_email_async(
+#         'Leadership Summit Confirmation', 
+#         delegate.email, 
+#         {
+#             "first_name" : first_name,
+#             "delegate_id" : delegate_id
+#         },
+#         'email_template.html'
+#     )
+#     return {"detail":"registration success", }
 
 # Api endpoint for NC Jos
 @app.post("/api/register_for_ncjos")
 async def register(ncjos: NCJOS):
-    name, email = submit_nc_jos_data(ncjos)
+    first_name, last_name, email, lc = submit_nc_jos_data(ncjos)
+    ticket = f"firstname={first_name}&lastname={last_name}&localCom={lc}"
     await send_email_async(
-        'NC Jos Confirmation', 
-        ncjos.email, 
+        'Welcome Aboard!', 
+        email, 
         {
-            "first_name" : name,
+            "first_name" : first_name,
+            "ticket": ticket,
         },
-        'email_template.html'
+        'email.html'
     )
     created = {
         'status' : True,

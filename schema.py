@@ -53,19 +53,16 @@ class NCJOS(BaseModel):
     ravenCoordinates: str
     gender: str
     email: EmailStr
-    address: str
     lc: str
     birthday: str
     rank: str
     emergencyContact: str
-    allergies: str
-    allergyTreatment: str
-    oppositeSexCompatibility: str
-    firstSummit: str
+    allergies: Union[str, None] = None
+    allergyTreatment: Union[str, None] = None
+    oppositeSexCompatibility: bool
+    firstSummit: bool
     emergencyContactRelationship: str
-    suggestions: str
-
-    # hear_about_recruitment: Union[str, None] = None
+    suggestions: Union[str, None] = None
 
 
 # class Config(BaseSettings):
