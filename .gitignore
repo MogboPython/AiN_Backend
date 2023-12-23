@@ -6,3 +6,5 @@ Spacefile
 .env
 __pycache__
 cred.txt
+app/
+config/

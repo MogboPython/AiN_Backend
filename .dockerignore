@@ -1,3 +1,5 @@
 fly.toml
 venv/
 dump.py
+app/
+config/

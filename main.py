@@ -156,11 +156,11 @@ def submit_nc_jos_data(ncjos: NCJOS):
             ncjos.lc,
             ncjos.birthday,
             ncjos.rank,
-            ncjos.emergencyContact,
+            ncjos.firstSummit,
             ncjos.allergies,
             ncjos.allergyTreatment,
             ncjos.oppositeSexCompatibility,
-            ncjos.firstSummit,
+            ncjos.emergencyContact,
             ncjos.emergencyContactRelationship,
             ncjos.suggestions
         ])
@@ -214,7 +214,9 @@ async def submit_email(email: UserEmail):
 @app.post("/api/register_for_ncjos")
 async def register(ncjos: NCJOS):
     first_name, last_name, email, lc = submit_nc_jos_data(ncjos)
-    ticket = f"firstname={first_name}&lastname={last_name}&localCom={lc}"
+    # ticket = "https://henceee.fly.dev/nts-enugu/generate-ticket?firstName=" + first_name + "&lastName=" + last_name + "&localCom=" + payload["localCom"]
+    # ticket = f"127.0.0.1:5000/nc-jos/generate-ticket?firstName={first_name}&lastName={last_name}&localCom={lc}"
+    ticket = f"https://henceee.fly.dev/nc-jos/generate-ticket?firstName={first_name}&lastName={last_name}&localCom={lc}"
     await send_email_async(
         'Welcome Aboard!', 
         email, 
