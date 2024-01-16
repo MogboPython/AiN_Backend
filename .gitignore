@@ -8,3 +8,4 @@ __pycache__
 cred.txt
 app/
 config/
+app.py

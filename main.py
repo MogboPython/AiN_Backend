@@ -1,15 +1,13 @@
 from schema import *
-from config import Configuration, conf
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
-from fastapi_mail import FastMail, MessageSchema, MessageType
-from oauth2client.service_account import ServiceAccountCredentials
-import gspread
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from utils.helper_functions import split_name, split_university
+from utils.mail import send_email_async
+from utils.sheet import gc
 
-config = Configuration()
 
 app = FastAPI()
 
@@ -25,43 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-gc = gspread.authorize(ServiceAccountCredentials.from_json_keyfile_name(config.GOOGLE_CREDENTIALS, config.GOOGLE_OAUTH_SCOPES))
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     detail = exc.errors()[0]["msg"]
     return JSONResponse(status_code=422, content={"detail": detail})
-
-async def send_email_async(subject: str, email_to: str, body: dict, template: str):
-    message = MessageSchema(
-        subject=subject,
-        recipients=[email_to],
-        template_body=body,
-        subtype=MessageType.html,
-    )
-    fm = FastMail(conf)
-
-    await fm.send_message(message, template_name=template)
-
-def split_name(name):
-    name_parts = name.split(" ")
-    first_part = name_parts[0]
-    last_part = " ".join(name_parts[1:])
-    return first_part, last_part
-
-def split_university(name):
-    university_parts = name.split(",")
-    first_part = university_parts[0]
-    last_part = ",".join(university_parts[1:])
-    return first_part, last_part
-
-def get_serial_number(number: int):
-    if number < 10:
-        return "00" + str(number)
-    elif number >= 10 and number < 100:
-        return "0" + str(number)
-    else:
-        return str(number)
 
 def submit_to_sheet(email: str):
     sheet = gc.open('Website Email Signups').sheet1
@@ -71,33 +37,6 @@ def submit_to_sheet(email: str):
         raise HTTPException(status_code=400, detail="already registered")
     else:
         sheet.append_row([email])
-
-# def submit_delegate(delegate: Delegate):
-#     sheet = gc.open('Leadership Summit Registration Sheet').sheet1
-#     all_values = sheet.get_all_values()
-#     emails = [row[2] for row in all_values]  
-
-#     if delegate.email in emails:
-#         raise HTTPException(status_code=400, detail="already registered")
-#     else:
-#         num_of_rows = len(all_values)
-#         delegate_id = "LS23" + get_serial_number(num_of_rows)
-#         sheet.append_row([
-#             delegate_id,
-#             delegate.name, 
-#             delegate.email, 
-#             delegate.phone, 
-#             delegate.state_residence, 
-#             delegate.occupation, 
-#             delegate.school, 
-#             delegate.expectations, 
-#             delegate.sdg_knowledge,
-#             delegate.join_event,
-#             delegate.hear_about_event
-#         ])
-
-#         first_name, _ = split_name(delegate.name)
-#         return delegate_id, first_name
     
 def submit_recruit(recruit: Recruit):
     name_of_school = recruit.name_of_school 
@@ -196,26 +135,10 @@ async def submit_email(email: UserEmail):
     submit_to_sheet(email.email)
     return {"detail":"registration success"}
 
-# @app.post("/api/register_delegate")
-# async def register(delegate: Delegate):
-#     delegate_id, first_name = submit_delegate(delegate)
-#     await send_email_async(
-#         'Leadership Summit Confirmation', 
-#         delegate.email, 
-#         {
-#             "first_name" : first_name,
-#             "delegate_id" : delegate_id
-#         },
-#         'email_template.html'
-#     )
-#     return {"detail":"registration success", }
-
 # Api endpoint for NC Jos
 @app.post("/api/register_for_ncjos")
 async def register(ncjos: NCJOS):
     first_name, last_name, email, lc = submit_nc_jos_data(ncjos)
-    # ticket = "https://henceee.fly.dev/nts-enugu/generate-ticket?firstName=" + first_name + "&lastName=" + last_name + "&localCom=" + payload["localCom"]
-    # ticket = f"127.0.0.1:5000/nc-jos/generate-ticket?firstName={first_name}&lastName={last_name}&localCom={lc}"
     ticket = f"https://henceee.fly.dev/nc-jos/generate-ticket?firstName={first_name}&lastName={last_name}&localCom={lc}"
     await send_email_async(
         'Welcome Aboard!', 
